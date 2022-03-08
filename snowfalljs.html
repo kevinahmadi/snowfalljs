@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <style type="text/css">
+      #weather{
+        background-color:#000;
+      }
+      
+    </style>
+    <script type="text/javascript">
+      document.addEventListener('DOMContentLoaded', function(){
+        function randomInt(min, max){
+          return Math.floor(Math.random() * (max - min + 1) + min);
+        }
+        function plusOrMinus(){
+          return Math.random() < 0.5 ? -1 : 1;
+        }
+        var canvas=document.getElementById('weather'),
+        ctx=canvas.getContext('2d'),
+        reps=0,
+        repsMod=randomInt(8,10),
+        phase=[
+          randomInt(8,10),
+          randomInt(4,6),
+          randomInt(1,3),
+          randomInt(7,9),
+          randomInt(11,13)
+        ],
+        currentPhase=1,
+        totalReps=randomInt(10000, 15000),
+        end=false,
+        snowHeight={
+          start:-30,
+          max:80,
+          end:-30
+        },
+        t,
+        flakes=[];
+
+        raindrops=[];
+        wind=0;
+        flash=100;
+
+        
+
+        function newFlake(){
+          flakes.push({
+            x:randomInt(0,canvas.width),
+            y:0,
+            r:randomInt(1,5),
+            s:0,
+            e:Math.PI*2,
+            dx:(randomInt(1,3)*0.1)*plusOrMinus(),
+            dy:randomInt(5,50)*0.01,
+            o:randomInt(2,10)*0.1,
+            M:randomInt(250,500),
+            inst:0,
+          })
+        }
+        
+
+        function drawBall(){
+          if(reps%repsMod==0 && !end){
+            newFlake();
+          }
+          for(var i=0;i<flakes.length;i++){
+            ctx.beginPath();
+            ctx.arc(flakes[i].x, flakes[i].y-flakes[i].r, flakes[i].r, flakes[i].s, flakes[i].e);
+            ctx.fillStyle='rgba(255,255,255,'+flakes[i].o+')';
+            ctx.fill();
+            ctx.shadowBlur=10;
+            ctx.shadowColor='#fff';
+            ctx.closePath();
+          }
+          reps+=1;
+          for(var i=0;i<phase.length-1;i++){
+            if(reps>=(totalReps/5)*(i+1) && reps<=(totalReps/5)*(i+2) && repsMod!=phase[i+1]){
+              repsMod=phase[i+1];
+            }
+          }
+          
+          if(reps>=totalReps){
+            end=true;
+          }
+        }
+
+        function snowfall(){
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          drawBall();
+          pile();
+          for(var i=0;i<flakes.length;i++){
+            if(flakes[i].inst>=flakes[i].M){
+              flakes[i].dx*=-1;
+              flakes[i].inst=0;
+            }
+            var xMod=flakes[i].inst/(flakes[i].M/2);
+            if(xMod>1){
+              xMod=2-xMod;
+            }
+            flakes[i].x+=flakes[i].dx*xMod;
+            flakes[i].y+=flakes[i].dy;
+            flakes[i].inst+=1;
+
+            if(flakes[i].y>canvas.height+(flakes[i].r*2)){
+              flakes.splice(i, 1);
+              if(i%10==0 && !end){
+                snowHeight.start+=1;
+                if(snowHeight.start>=snowHeight.max){
+                  snowHeight.start=snowHeight.max;
+                }
+              }
+              if(i%10==0 && end){
+                snowHeight.start-=1;
+              }
+            }
+            if(flakes.length<=0){
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              clearInterval(t);
+            }
+          }
+        }
+
+        function pile(){
+          function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+            if (typeof stroke === 'undefined') {
+              stroke = true;
+            }
+            if (typeof radius === 'undefined') {
+              radius = 5;
+            }
+            if (typeof radius === 'number') {
+              radius = {tl: radius, tr: radius, br: radius, bl: radius};
+            } else {
+              var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
+              for (var side in defaultRadius) {
+                radius[side] = radius[side] || defaultRadius[side];
+              }
+            }
+            ctx.beginPath();
+            ctx.moveTo(x + radius.tl, y);
+            ctx.lineTo(x + width - radius.tr, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+            ctx.lineTo(x + width, y + height - radius.br);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+            ctx.lineTo(x + radius.bl, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+            ctx.lineTo(x, y + radius.tl);
+            ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+            ctx.fillStyle='#fff';
+            ctx.closePath();
+            if (fill) {
+              ctx.fill();
+            }
+            if (stroke) {
+              ctx.stroke();
+            }
+          }
+          ctx.beginPath();
+          ctx.rect(0, canvas.height-snowHeight.start, canvas.width, canvas.height);
+          ctx.fillStyle='#fff';
+          ctx.fill();
+          ctx.closePath();
+          roundRect(ctx, 40, canvas.height-snowHeight.start-9, 270, canvas.height, 50, true, false);
+          roundRect(ctx, 320, canvas.height-snowHeight.start-11, 250, canvas.height, 100, true, false);
+          roundRect(ctx, 580, canvas.height-snowHeight.start-5, 800, canvas.height, 50, true, false);
+          roundRect(ctx, 715, canvas.height-snowHeight.start-10, 320, canvas.height, 60, true, false);
+          roundRect(ctx, 1600, canvas.height-snowHeight.start-12, 1920, canvas.height, 80, true, false);
+        }
+
+        function newRaindrop(){
+          raindrops.push({
+            x:randomInt(0,canvas.width),
+            y:0,
+            r:randomInt(1,3),
+            s:0,
+            e:Math.PI*2,
+            dx:wind,
+            dy:randomInt(10,50),
+            o:1,
+            inst:0,
+          })
+        }
+
+        function drawDrop(){
+          if(reps%repsMod==0 && !end){
+            for(var i=0;i<12;i++){
+              newRaindrop();
+            }
+          }
+          for(var i=0;i<raindrops.length;i++){
+            ctx.beginPath();
+            ctx.arc(raindrops[i].x, raindrops[i].y-raindrops[i].r, raindrops[i].r, raindrops[i].s, raindrops[i].e);
+            ctx.fillStyle='rgba(161,198,204,'+raindrops[i].o+')';
+            ctx.fill();
+            ctx.shadowBlur=10;
+            ctx.shadowColor='#fff';
+            ctx.closePath();
+          }
+          reps+=1;
+          for(var i=0;i<phase.length-1;i++){
+            if(reps>=(totalReps/5)*(i+1) && reps<=(totalReps/5)*(i+2) && repsMod!=phase[i+1]){
+              repsMod=phase[i+1];
+              currentPhase+=1;
+            }
+          }
+          
+          if(reps>=totalReps){
+            end=true;
+          }
+        }
+
+        function rainfall(){
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          drawDrop();
+          if(currentPhase==3){
+            // if(flash>0){
+            //   lightningFlash();
+            // }
+            // else{
+            //   flash=100;
+            // }
+          }
+          for(var i=0;i<raindrops.length;i++){
+            if(reps%1000==0){
+              var roll=randomInt(1,10);
+              if(roll==1 && currentPhase==3){
+                wind=randomInt(-20,20);
+              }
+              else{
+                wind=0;
+              }
+            }
+            raindrops[i].x+=raindrops[i].dx;
+            raindrops[i].y+=raindrops[i].dy;
+            if(raindrops[i].y>canvas.height+(raindrops[i].r*2)){
+              raindrops.splice(i, 1);
+            }
+            if(raindrops.length<=0){
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              clearInterval(t);
+            }
+          }
+        }
+
+        function lightningFlash(){
+          ctx.beginPath();
+          ctx.rect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle='rgba(255,255,255,'+flash*0.01+')';
+          ctx.fill();
+          ctx.closePath();
+          flash--;
+        }
+
+        function init(){
+          function snow(){
+            t=setInterval(snowfall, 10);
+          }
+          function rain(){
+            t=setInterval(rainfall, 10);
+          }
+          snow();
+        }
+        
+        init();
+
+      })
+    </script>
+  </head>
+  <body>
+    <canvas id="weather" width="1920" height="1080"></canvas>
+  </body>
+</html>
